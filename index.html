@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skip Hire CRM Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--accent:#E85D26;--accent2:#FF8C5A;--accent-light:#FFF1EB;
+--bg:#F8F7F5;--surface:#FFFFFF;--surface2:#F3F2F0;
+--border:#E5E3DF;--border2:#D0CEC9;
+--text:#1A1917;--text2:#6B6866;--text3:#9B9895;
+--success:#1A7A4A;--success-bg:#EDFAF3;
+--danger:#C4381A;--danger-bg:#FEF0EC;
+--info:#1A5CA8;--info-bg:#EBF3FE;
+--warn:#9A5C00;--warn-bg:#FFF8EC;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.dash{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+/* Sidebar */
+.sidebar{background:var(--text);color:#fff;padding:24px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:20px}
+.logo{font-size:18px;font-weight:600;color:#fff;letter-spacing:-0.3px}
+.logo span{color:var(--accent2)}
+.sidebar-label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.sidebar select,.sidebar input[type=date]{width:100%;background:#2A2927;border:1px solid #3A3835;color:#fff;border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none}
+.sidebar select option{background:#2A2927}
+.sidebar input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5}
+.filter-group{display:flex;flex-direction:column;gap:6px}
+.date-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-reset{background:transparent;border:1px solid #3A3835;color:#888;border-radius:6px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s;width:100%}
+.btn-reset:hover{background:#2A2927;color:#fff}
+.sidebar-sep{border:none;border-top:1px solid #2A2927}
+.active-info{font-size:12px;color:#888;line-height:1.6}
+.active-info strong{color:var(--accent2)}
+/* Main */
+.main{padding:28px 32px;display:flex;flex-direction:column;gap:28px;min-width:0}
+.section-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title::before{content:'';display:inline-block;width:3px;height:16px;background:var(--accent);border-radius:2px}
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
+.kpi.kpi-lost::after{background:var(--danger)}
+.kpi-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:600;color:var(--text);letter-spacing:-1px;font-family:'DM Mono',monospace}
+.kpi-sub{font-size:12px;color:var(--text3);margin-top:3px}
+.kpi-delta{display:inline-block;font-size:11px;font-weight:500;padding:2px 6px;border-radius:4px;margin-top:4px}
+.delta-up{background:var(--success-bg);color:var(--success)}
+.delta-dn{background:var(--danger-bg);color:var(--danger)}
+/* Tables */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--surface2);padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:var(--accent)}
+th.sort-asc::after{content:" ↑"}
+th.sort-desc::after{content:" ↓"}
+td{padding:9px 14px;border-top:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:hover td{background:var(--accent-light)}
+.bar-cell{display:flex;align-items:center;gap:8px}
+.mini-bar{height:5px;border-radius:3px;background:var(--accent);min-width:2px}
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.4px}
+.badge-cpc{background:#FFF1EB;color:#E85D26}
+.badge-cpcbing{background:#EBF3FE;color:#1A5CA8}
+.badge-other{background:var(--surface2);color:var(--text2)}
+/* Charts */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+.chart-wrap{position:relative;width:100%;height:280px}
+.chart-wrap-tall{position:relative;width:100%;height:400px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.channel-legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)}
+.leg-dot{width:10px;height:10px;border-radius:2px}
+/* Tabs */
+.tabs{display:flex;gap:2px;background:var(--surface2);border-radius:7px;padding:3px;width:fit-content;margin-bottom:16px}
+.tab{padding:6px 14px;border-radius:5px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border:none;background:transparent;font-family:inherit;transition:.15s}
+.tab.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+/* Postcode search */
+.search-row{display:flex;gap:10px;margin-bottom:14px;align-items:center}
+.search-row input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:var(--surface)}
+.search-row input:focus{border-color:var(--accent)}
+.sort-select{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);cursor:pointer;outline:none}
+/* Win rate bar */
+.wr-bar{display:flex;height:5px;border-radius:3px;overflow:hidden;min-width:60px}
+.wr-won{background:var(--accent)}
+.wr-lost{background:var(--border2)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="dash">
+<aside class="sidebar">
+  <div>
+    <div class="logo">Easy<span>Skip</span> CRM</div>
+    <div style="font-size:11px;color:#666;margin-top:2px">Performance Dashboard</div>
+  </div>
+  <hr class="sidebar-sep">
+  <div class="filter-group">
+    <div class="sidebar-label">Google Sheet URL</div>
+    <input type="text" id="sheet-url" placeholder="Paste published sheet URL..." style="width:100%;background:#2A2927;border:1px solid #3A3835;color:#fff;border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
+    <button id="btn-load" style="width:100%;margin-top:6px;background:#E85D26;color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:500">Load Data</button>
+    <div id="sheet-error" style="display:none;font-size:11px;color:#FF8C5A;margin-top:5px;line-height:1.4"></div>
+    <div id="load-spinner" style="display:none;align-items:center;gap:6px;margin-top:5px;font-size:11px;color:#888">
+      <span style="display:inline-block;width:10px;height:10px;border:2px solid #888;border-top-color:#E85D26;border-radius:50%;animation:spin .8s linear infinite"></span>
+      Loading...
+    </div>
+    <div id="data-status" style="display:none;align-items:center;gap:5px;margin-top:5px;font-size:11px;color:#4ade80">
+      <span>&#10003;</span><span id="row-count"></span>
+    </div>
+    <div id="gads-status" style="display:none;align-items:center;gap:5px;margin-top:4px;font-size:11px;">
+      <span>&#9654;</span><span id="gads-count"></span>
+    </div>
+  </div>
+  <div class="filter-group">
+    <div class="sidebar-label">Google Spend Tab GID</div>
+    <input type="text" id="gads-gid" placeholder="e.g. 344254581" style="width:100%;background:#2A2927;border:1px solid #3A3835;color:#fff;border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
+    <div style="font-size:10px;color:#666;margin-top:4px;line-height:1.4">Find it in the tab URL: ?gid=XXXXXXX</div>
+  </div>
+  <hr class="sidebar-sep">
+  <div class="filter-group">
+    <div class="sidebar-label">Date Range</div>
+    <div class="date-row">
+      <div><div style="font-size:11px;color:#666;margin-bottom:4px">From</div>
+        <input type="date" id="f-from" value="2025-06-12"></div>
+      <div><div style="font-size:11px;color:#666;margin-bottom:4px">To</div>
+        <input type="date" id="f-to" value="2026-03-13"></div>
+    </div>
+  </div>
+  <div class="filter-group">
+    <div class="sidebar-label">Channel</div>
+    <select id="f-channel"><option value="">All Channels</option>
+      <option value="cpc">Google</option>
+      <option value="cpc_bing">Bing</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <div class="sidebar-label">Region</div>
+    <select id="f-region"><option value="">All Regions</option></select>
+  </div>
+  <div class="filter-group">
+    <div class="sidebar-label">Deal Status</div>
+    <select id="f-status">
+      <option value="">All Deals</option>
+      <option value="won">Won Only</option>
+      <option value="lost">Lost Only</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <div class="sidebar-label">Product</div>
+    <select id="f-product"><option value="">All Products</option>
+      <option>4 yard skip</option><option>6 yard skip</option>
+      <option>8 yard skip</option><option>10 yard skip</option>
+      <option>12 yard skip</option><option>14 yard skip</option>
+      <option>16 yard skip</option>
+    </select>
+  </div>
+  <button class="btn-reset" onclick="resetFilters()">Reset All Filters</button>
+  <hr class="sidebar-sep">
+  <div class="active-info" id="filter-summary">Loading...</div>
+</aside>
+
+<main class="main">
+  <div>
+    <div style="font-size:22px;font-weight:600;letter-spacing:-0.5px;color:var(--text)">Performance Overview</div>
+    <div style="font-size:13px;color:var(--text3);margin-top:3px" id="date-label">Jun 2025 – Mar 2026</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="k-revenue">—</div><div class="kpi-sub" id="k-revenue-sub">All deals</div></div>
+    <div class="kpi"><div class="kpi-label">Net Profit</div><div class="kpi-value" id="k-profit">—</div><div class="kpi-sub" id="k-margin-sub">Won deals only</div></div>
+    <div class="kpi kpi-lost"><div class="kpi-label">Lost Revenue</div><div class="kpi-value" id="k-lost-rev">—</div><div class="kpi-sub" id="k-lost-sub">— lost deals</div></div>
+    <div class="kpi"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="k-winrate">—</div><div class="kpi-sub" id="k-deals-sub">— total deals</div></div>
+    <div class="kpi"><div class="kpi-label">Break-Even ROAS <span style="font-size:9px;background:#FFF1EB;color:#E85D26;border-radius:3px;padding:1px 5px;font-weight:600;letter-spacing:.3px">WEIGHTED</span></div><div class="kpi-value" id="k-roas">—</div><div class="kpi-sub" id="k-roas-sub">Median: — · Trimmed: —</div></div>
+    <div class="kpi"><div class="kpi-label">Avg Net Margin</div><div class="kpi-value" id="k-avg-margin">—</div><div class="kpi-sub" id="k-avg-margin-sub">All deals</div></div>
+    <div class="kpi"><div class="kpi-label">Ads ROAS <span style="font-size:9px;background:#EDFAF3;color:#1A7A4A;border-radius:3px;padding:1px 5px;font-weight:600;letter-spacing:.3px">REAL</span></div><div class="kpi-value" id="k-ads-roas">—</div><div class="kpi-sub" id="k-ads-roas-sub">Google only</div></div>
+    <div class="kpi"><div class="kpi-label">Ads Spend</div><div class="kpi-value" id="k-ads-spend">—</div><div class="kpi-sub" id="k-ads-spend-sub">Google filtered</div></div>
+  </div>
+
+  <!-- Trend -->
+  <div>
+    <div class="section-title" id="trend-title">Monthly Trend</div>
+    <div class="chart-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+        <div class="tabs">
+          <button class="tab active" onclick="setTrendMetric('revenue',this)">Revenue</button>
+          <button class="tab" onclick="setTrendMetric('profit',this)">Net Profit</button>
+          <button class="tab" onclick="setTrendMetric('deals',this)">Deals</button>
+          <button class="tab" onclick="setTrendMetric('roas',this)">ROAS</button>
+        </div>
+        <div style="display:flex;gap:4px;background:var(--surface2);border-radius:6px;padding:3px">
+          <button id="trend-btn-month" onclick="setTrendPeriod('month',this)" style="padding:4px 12px;border:none;border-radius:4px;font-size:12px;font-family:inherit;cursor:pointer;background:#E85D26;color:#fff;font-weight:500">Month</button>
+          <button id="trend-btn-day"   onclick="setTrendPeriod('day',this)"   style="padding:4px 12px;border:none;border-radius:4px;font-size:12px;font-family:inherit;cursor:pointer;background:transparent;color:var(--text2)">Day</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Region + Channel side by side -->
+  <div class="two-col">
+    <div>
+      <div class="section-title">Revenue by Channel</div>
+      <div class="chart-card">
+        <div class="channel-legend" id="ch-legend"></div>
+        <div class="chart-wrap"><canvas id="chart-channel"></canvas></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Product Mix</div>
+      <div class="chart-card">
+        <div class="channel-legend" id="prod-legend"></div>
+        <div class="chart-wrap"><canvas id="chart-product"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Region table -->
+  <div>
+    <div class="section-title">Performance by Region</div>
+    <div class="table-wrap">
+      <table id="tbl-region">
+        <thead><tr>
+          <th onclick="sortTable('region',this)">Region</th>
+          <th onclick="sortTable('region',this)">Deals</th>
+          <th onclick="sortTable('region',this)">Revenue</th>
+          <th onclick="sortTable('region',this)">Net Profit</th>
+          <th onclick="sortTable('region',this)">Avg Margin</th>
+          <th onclick="sortTable('region',this)">Win Rate</th>
+          <th onclick="sortTable('region',this)">B/E ROAS</th>
+          <th>Ads ROAS</th>
+          <th onclick="sortTable('region',this)">Top Channel</th>
+        </tr></thead>
+        <tbody id="tbody-region"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Region x Channel breakdown -->
+  <div>
+    <div class="section-title">Region × Channel Breakdown</div>
+    <div class="chart-card">
+      <div class="tabs" id="region-metric-tabs">
+        <button class="tab active" onclick="setRegionMetric('revenue',this)">Revenue</button>
+        <button class="tab" onclick="setRegionMetric('profit',this)">Net Profit</button>
+        <button class="tab" onclick="setRegionMetric('deals',this)">Deals</button>
+        <button class="tab" onclick="setRegionMetric('winrate',this)">Win Rate</button>
+        <button class="tab" onclick="setRegionMetric('roas',this)">B/E ROAS</button>
+      </div>
+      <div class="chart-wrap-tall"><canvas id="chart-region-channel"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Postcode table -->
+  <div>
+    <div class="section-title">Performance by Postcode Area</div>
+    <div class="search-row">
+      <input type="text" id="pc-search" placeholder="Search postcode area..." oninput="renderPostcodeTable()">
+      <select class="sort-select" id="pc-sort" onchange="renderPostcodeTable()">
+        <option value="revenue">Sort: Revenue</option>
+        <option value="profit">Sort: Net Profit</option>
+        <option value="deals">Sort: Deals</option>
+        <option value="winrate">Sort: Win Rate</option>
+        <option value="roas">Sort: ROAS</option>
+        <option value="adsroas">Sort: Ads ROAS</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Postcode</th><th>Region</th><th>Channel</th>
+          <th>Deals</th><th>Revenue</th><th>Net Profit</th>
+          <th>Avg Margin</th><th>Win Rate</th><th>B/E ROAS</th><th>Ads ROAS</th>
+        </tr></thead>
+        <tbody id="tbody-postcode"></tbody>
+      </table>
+    </div>
+  </div>
+
+
+</main>
+</div>
+
+<script>
+let RAW = [];
+let GADS = []; // [{date,postcode,prefix,cost,revenue,conversions}]
+
+
+// Extract sheet base ID (works for /d/e/ published URLs and /d/ edit URLs)
+function getSheetBaseId(url) {
+  const m = url.match(/\/d\/e\/([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+  return m ? { id: m[1], isPublished: url.includes('/d/e/') } : null;
+}
+
+// Fetch the pubhtml index to discover tab gid by name
+async function findTabGid(url, tabName) {
+  const info = getSheetBaseId(url);
+  if (!info) return null;
+  const indexUrl = info.isPublished
+    ? 'https://docs.google.com/spreadsheets/d/e/' + info.id + '/pubhtml'
+    : 'https://docs.google.com/spreadsheets/d/' + info.id + '/pubhtml';
+  try {
+    const res = await fetch(indexUrl);
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    // Try multiple known Google Sheets pubhtml tab patterns
+    const patterns = [
+      // Pattern 1: <li id="sheet-button-NNN" ...>Name</li>
+      /id="sheet-button-([0-9]+)"[^>]*>\s*([^<]+)/g,
+      // Pattern 2: data-sheet-id="NNN" ...>Name
+      /data-sheet-id="([0-9]+)"[^>]*>\s*([^<]+)/g,
+      // Pattern 3: href="#gid=NNN">Name
+      /href="#gid=([0-9]+)"[^>]*>\s*([^<]+)/g,
+      // Pattern 4: gid="NNN" ...>Name (li elements)
+      /gid="([0-9]+)"[^>]*>\s*<[^>]+>\s*([^<]+)/g,
+    ];
+
+    for (const re of patterns) {
+      let m;
+      while ((m = re.exec(html)) !== null) {
+        const foundName = m[2].trim().replace(/\s+/g,' ');
+        if (foundName.toLowerCase() === tabName.toLowerCase()) return m[1];
+      }
+    }
+
+    // Debug: log all tab names found to help diagnose
+    console.log('pubhtml fetched, length:', html.length);
+    const debugRe = /sheet-button-([0-9]+)[^>]*>([^<]{1,40})/g;
+    let dm; const found = [];
+    while ((dm = debugRe.exec(html)) !== null) found.push(dm[2].trim());
+    console.log('Tabs found via sheet-button:', found);
+
+    // Also try finding any element containing the tab name
+    const nameRe = new RegExp(tabName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const gidNearName = html.match(new RegExp('([0-9]{6,})(?=[^>]{0,200}' + tabName + '|' + tabName + '[^<]{0,200})'));
+    if (gidNearName) return gidNearName[1];
+
+  } catch(e) { console.error('findTabGid error:', e); }
+  return null;
+}
+
+// Build a CSV URL for a specific tab gid from the base sheet URL
+function buildTabCsvUrl(url, gid) {
+  const info = getSheetBaseId(url);
+  if (!info) return null;
+  if (info.isPublished) {
+    return 'https://docs.google.com/spreadsheets/d/e/' + info.id + '/pub?output=csv&single=true&gid=' + gid;
+  }
+  return 'https://docs.google.com/spreadsheets/d/' + info.id + '/export?format=csv&gid=' + gid;
+}
+
+function parseGoogleSpend(text) {
+  // Expected columns: Date, Postcode, Postcode Prefix, Cost, Conversions, Revenue
+  const rows = [];
+  const lines = text.split(/\r?\n/);
+  // Log headers for debugging
+  if (lines.length > 0) console.log('google_spend headers:', lines[0]);
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur.trim());
+    if (cols.length < 6) continue;
+    const toF = s => { const v = parseFloat(String(s).replace(/[^0-9.-]/g,'')); return isNaN(v) ? 0 : v; };
+    let d = cols[0].replace(/"/g,'').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      const parsed = new Date(d);
+      d = !isNaN(parsed) ? parsed.toISOString().slice(0,10) : '';
+    }
+    if (!d) continue;
+    rows.push({
+      date: d,
+      postcode: cols[1] || '',
+      prefix: cols[2] || '',
+      cost: toF(cols[3]),
+      conversions: toF(cols[4]),
+      revenue: toF(cols[5])
+    });
+  }
+  return rows;
+}
+
+async function loadGoogleSpend(url) {
+  const statusEl = document.getElementById('gads-status');
+  const countEl  = document.getElementById('gads-count');
+  const gid = (document.getElementById('gads-gid').value || '').trim();
+  statusEl.style.display = 'flex';
+  if (!gid) {
+    statusEl.style.color = '#888';
+    countEl.textContent = 'Enter the google_spend tab GID in the field above';
+    return;
+  }
+  statusEl.style.color = '#888';
+  countEl.textContent = 'Loading google_spend tab...';
+  try {
+    const csvUrl = buildTabCsvUrl(url, gid);
+    if (!csvUrl) throw new Error('Could not build CSV URL');
+    const res = await fetch(csvUrl);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    if (text.trim().startsWith('<')) throw new Error('Got HTML — check sheet is published');
+    const header = (text.split(/\r?\n/)[0] || '').toLowerCase();
+    if (header.includes('deal_id') || header.includes('utm_medium')) {
+      throw new Error('Wrong tab — got CRM data. Double-check the GID');
+    }
+    GADS = parseGoogleSpend(text);
+    if (!GADS.length) throw new Error('No rows parsed. Header row: ' + text.split(/\r?\n/)[0].slice(0,80));
+    statusEl.style.color = '#4ade80';
+    countEl.textContent = '\u2713 Google Ads: ' + GADS.length.toLocaleString() + ' rows loaded';
+    try { localStorage.setItem('sk_gads_gid', gid); } catch(e) {}
+    // Refresh tables so Ads ROAS columns populate
+    if (RAW.length) { buildPostcodeData(); renderPostcodeTable(); updateRegionTable(); updateKPIs(); }
+    refresh();
+  } catch(e) {
+    statusEl.style.color = '#FF8C5A';
+    countEl.textContent = 'Google Ads failed: ' + e.message;
+  }
+}
+
+function buildCsvUrl(url) {
+  url = url.trim();
+  // Already a CSV export link
+  if (url.includes('output=csv')) return url;
+  // /pub link — convert to CSV
+  if (url.includes('/pub')) {
+    const base = url.split('?')[0];
+    const gidMatch = url.match(/[?&]gid=([0-9]+)/);
+    const gid = gidMatch ? '&gid=' + gidMatch[1] : '';
+    return base + '?output=csv&single=true' + gid;
+  }
+  // Standard /d/e/ published URL
+  const eMatch = url.match(/\/d\/e\/([a-zA-Z0-9_-]+)/);
+  if (eMatch) {
+    const gidMatch = url.match(/[?&]gid=([0-9]+)/);
+    const gid = gidMatch ? '&gid=' + gidMatch[1] : '';
+    return 'https://docs.google.com/spreadsheets/d/e/' + eMatch[1] + '/pub?output=csv&single=true' + gid;
+  }
+  // Standard /d/ID/ edit URL
+  const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+  if (idMatch) {
+    const gidMatch = url.match(/[?&]gid=([0-9]+)/);
+    const gid = gidMatch ? gidMatch[1] : '0';
+    return 'https://docs.google.com/spreadsheets/d/' + idMatch[1] + '/export?format=csv&gid=' + gid;
+  }
+  return null;
+}
+function csvToArray(text) {
+  const rows = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { cols.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur);
+    if (cols.length < 17) continue;
+    const toF = s => { const v = parseFloat(String(s).replace(/,/g,'').replace(/%/g,'')); return isNaN(v) ? 0 : v; };
+    const raw_date = cols[4] ? cols[4].slice(0,10) : '';
+    let ch = (cols[5] || '').trim().toLowerCase();
+    if (ch === 'cpc') ch = 'cpc';
+    else if (ch === 'cpc_bing') ch = 'cpc_bing';
+    else ch = 'other';
+    rows.push([
+      raw_date, cols[8], cols[16], ch, cols[2],
+      cols[7]==='1'?1:0,
+      toF(cols[3]), toF(cols[12]), toF(cols[13]), toF(cols[15])
+    ]);
+  }
+  return rows;
+}
+async function loadSheet(url) {
+  if (!url) { showError('Please paste a Google Sheets URL first.'); return; }
+  const csvUrl = buildCsvUrl(url);
+  if (!csvUrl) { showError('Unrecognised URL. Paste the normal sheet URL (containing /d/ID/) or the published CSV link (File > Share > Publish to web > CSV).'); return; }
+  showLoading(true); showError('');
+  try {
+    const res = await fetch(csvUrl);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' — Is the sheet published to web?');
+    const text = await res.text();
+    if (text.includes('<!DOCTYPE') || text.includes('<html')) throw new Error('Got HTML instead of CSV — sheet may not be published (File > Share > Publish to web > CSV)');
+    RAW = csvToArray(text);
+    if (!RAW.length) throw new Error('No data rows found — check column order matches expected format');
+    showError(''); showLoading(false);
+    document.getElementById('row-count').textContent = RAW.length.toLocaleString() + ' rows loaded';
+    document.getElementById('data-status').style.display = 'flex';
+    try { localStorage.setItem('sk_sheet_url', url); } catch(e){}
+    populateRegions(); refresh();
+    loadGoogleSpend(url);
+  } catch(e) { showLoading(false); showError(e.message); }
+}
+function showLoading(on) { document.getElementById('load-spinner').style.display = on ? 'flex' : 'none'; }
+function showError(msg) { const el = document.getElementById('sheet-error'); el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+
+
+// Indices: [date, region, postcode_area, channel, product, is_lost, deal_value, net_profit, np_margin, bk_ev_roas]
+const I = {date:0,region:1,pc:2,ch:3,prod:4,lost:5,dv:6,np:7,margin:8,roas:9};
+
+const COLORS = {
+  cpc:'#E85D26', cpc_bing:'#1A5CA8', other:'#9B9895'
+};
+const CH_LABELS = {cpc:'Google',cpc_bing:'Bing',other:'Other'};
+const PROD_COLORS = ['#E85D26','#FF8C5A','#1A5CA8','#1A7A4A','#7C3AED','#9A5C00','#9B9895'];
+
+let trendMetric = 'revenue', regionMetric = 'revenue', trendPeriod = 'month';
+let trendChart, channelChart, productChart, regionChannelChart;
+let filtered = [];
+
+function fmt(n){return n>=1000?'£'+Math.round(n/1000)+'k':'£'+Math.round(n)}
+function fmtFull(n){return '£'+(Math.round(n)).toLocaleString()}
+function pct(n){return Math.round(n*10)/10+'%'}
+
+function getFilters(){
+  return {
+    from: document.getElementById('f-from').value,
+    to: document.getElementById('f-to').value,
+    channel: document.getElementById('f-channel').value,
+    region: document.getElementById('f-region').value,
+    status: document.getElementById('f-status').value,
+    product: document.getElementById('f-product').value,
+  };
+}
+
+function applyFilters(){
+  const f = getFilters();
+  filtered = RAW.filter(d => {
+    if(f.from && d[I.date] < f.from) return false;
+    if(f.to && d[I.date] > f.to) return false;
+    if(f.channel && d[I.ch] !== f.channel) return false;
+    if(f.region && d[I.region] !== f.region) return false;
+    if(f.status==='won' && d[I.lost]) return false;
+    if(f.status==='lost' && !d[I.lost]) return false;
+    if(f.product && d[I.prod] !== f.product) return false;
+    return true;
+  });
+}
+
+function agg(arr){
+  const won  = arr.filter(d=>!d[I.lost]);
+  const lost = arr.filter(d=>d[I.lost]);
+  const total = arr.length;
+  // Revenue = ALL deals (won + lost)
+  const revenue     = arr.reduce((s,d)=>s+(d[I.dv]||0),0);
+  const lostRevenue = lost.reduce((s,d)=>s+(d[I.dv]||0),0);
+  const wonRevenue  = won.reduce((s,d)=>s+(d[I.dv]||0),0);
+  // Profit = ALL deals (won + lost) for ROAS calculation
+  const profit    = arr.reduce((s,d)=>s+(d[I.np]||0),0);
+  const wonProfit = won.reduce((s,d)=>s+(d[I.np]||0),0);
+  // Margin = all deals
+  const margins = arr.filter(d=>d[I.margin]).map(d=>d[I.margin]);
+  // ROAS = all deals (revenue / profit, where revenue includes all)
+  const roasSorted = arr.filter(d=>d[I.roas]!=null).map(d=>d[I.roas]).sort((a,b)=>a-b);
+  const weightedRoas = profit!==0 ? revenue/profit : 0;
+  const medianRoas = roasSorted.length ? (()=>{const m=roasSorted.length;return m%2?roasSorted[(m-1)/2]:(roasSorted[m/2-1]+roasSorted[m/2])/2})() : 0;
+  const trim=Math.floor(roasSorted.length*0.05);
+  const trimmed=roasSorted.slice(trim,roasSorted.length-trim);
+  const trimmedRoas=trimmed.length?trimmed.reduce((a,b)=>a+b,0)/trimmed.length:0;
+  return {
+    total, won:won.length, lost:lost.length,
+    revenue, wonRevenue, lostRevenue,
+    profit, wonProfit,
+    avgMargin: margins.length?margins.reduce((a,b)=>a+b,0)/margins.length:0,
+    weightedRoas, medianRoas, trimmedRoas,
+    avgRoas: weightedRoas,
+    winRate: total?won.length/total*100:0
+  };
+}
+
+function groupBy(arr, key){
+  const m = {};
+  arr.forEach(d=>{ const k=d[key]; if(!m[k])m[k]=[]; m[k].push(d); });
+  return m;
+}
+
+// Build a lookup of ads data by postcode prefix, filtered by date
+function getAdsLookup() {
+  const f = getFilters();
+  const activePrefixes = new Set(filtered.map(d => d[I.pc]).filter(Boolean));
+  const lookup = {}; // prefix -> {cost, revenue}
+  GADS.filter(d => (!f.from || d.date >= f.from) && (!f.to || d.date <= f.to))
+    .forEach(d => {
+      const p = d.prefix || '';
+      if (!p || !activePrefixes.has(p)) return;
+      if (!lookup[p]) lookup[p] = {cost:0, revenue:0};
+      lookup[p].cost    += d.cost;
+      lookup[p].revenue += d.revenue;
+    });
+  return lookup;
+}
+
+// Get ads totals for a list of prefixes
+function adsForPrefixes(lookup, prefixes) {
+  let cost = 0, revenue = 0;
+  prefixes.forEach(p => {
+    if (lookup[p]) { cost += lookup[p].cost; revenue += lookup[p].revenue; }
+  });
+  const roas = cost > 0 ? revenue / cost : null;
+  return { cost, revenue, roas };
+}
+
+function fmtAds(val, type) {
+  if (!GADS.length) return '<span style="color:var(--text3)">—</span>';
+  if (val === null || val === undefined) return '<span style="color:var(--text3)">—</span>';
+  if (type === 'roas') return val > 0 ? '<span style="color:' + (val >= 4.61 ? 'var(--success)' : 'var(--danger)') + '">' + (Math.round(val*100)/100) + 'x</span>' : '<span style="color:var(--text3)">—</span>';
+  return val > 0 ? fmtFull(val) : '<span style="color:var(--text3)">—</span>';
+}
+
+// Real ROAS: CRM revenue ÷ Google Ads cost, matched by postcode prefix
+// Only meaningful when Google channel is selected and GADS loaded
+function isGoogleSelected() {
+  return (document.getElementById('f-channel').value || '') === 'cpc';
+}
+
+function getAdsCostByPrefix() {
+  if (!GADS.length) return {};
+  const f = getFilters();
+  // Only include prefixes that exist in the currently filtered CRM data
+  // This ensures region/postcode filters affect ads spend & ROAS
+  const activePrefixes = new Set(filtered.map(d => d[I.pc]).filter(Boolean));
+  const byPrefix = {};
+  GADS.filter(d => (!f.from || d.date >= f.from) && (!f.to || d.date <= f.to))
+    .forEach(d => {
+      const p = d.prefix || '';
+      if (!p || !activePrefixes.has(p)) return;
+      byPrefix[p] = (byPrefix[p] || 0) + d.cost;
+    });
+  return byPrefix;
+}
+
+function realRoasCell(crmRevenue, prefix, costOrLookup) {
+  if (!isGoogleSelected() || !GADS.length) return '<span style="color:var(--text3)">—</span>';
+  // costOrLookup can be a number (pre-aggregated cost) or an object (lookup by prefix)
+  const cost = typeof costOrLookup === 'number' ? costOrLookup : (costOrLookup[prefix] || 0);
+  if (!cost) return '<span style="color:var(--text3)">—</span>';
+  const roas = crmRevenue / cost;
+  const color = roas >= 4.61 ? 'var(--success)' : 'var(--danger)';
+  return `<span style="color:${color};font-weight:600">${(Math.round(roas*100)/100)}x</span>`;
+}
+
+function updateKPIs(){
+  const a = agg(filtered);
+  document.getElementById('k-revenue').textContent = fmtFull(a.revenue);
+  document.getElementById('k-revenue-sub').textContent = 'Won '+fmtFull(a.wonRevenue)+' · Lost '+fmtFull(a.lostRevenue);
+  document.getElementById('k-profit').textContent = fmtFull(a.wonProfit);
+  document.getElementById('k-margin-sub').textContent = 'Won deals only';
+  document.getElementById('k-lost-rev').textContent = fmtFull(a.lostRevenue);
+  document.getElementById('k-lost-sub').textContent = a.lost+' lost deals';
+  document.getElementById('k-winrate').textContent = pct(a.winRate);
+  document.getElementById('k-deals-sub').textContent = a.won+' won · '+a.lost+' lost';
+  document.getElementById('k-roas').textContent = Math.round(a.weightedRoas*100)/100+'x';
+  document.getElementById('k-roas').style.color = '';
+  document.getElementById('k-roas-sub').textContent = 'Median: '+Math.round(a.medianRoas*100)/100+'x · Trimmed: '+Math.round(a.trimmedRoas*100)/100+'x';
+  document.getElementById('k-avg-margin').textContent = pct(a.avgMargin);
+  document.getElementById('k-avg-margin-sub').textContent = 'All deals';
+
+  // Ads ROAS KPI
+  if (GADS.length && isGoogleSelected()) {
+    const costLookup = getAdsCostByPrefix();
+    const totalCost = Object.values(costLookup).reduce((s,v)=>s+v, 0);
+    const adsRoas = totalCost > 0 ? a.revenue / totalCost : 0;
+    document.getElementById('k-ads-roas').textContent = adsRoas > 0 ? (Math.round(adsRoas*100)/100)+'x' : '—';
+    document.getElementById('k-ads-roas').style.color = adsRoas >= 4.61 ? 'var(--success)' : adsRoas > 0 ? 'var(--danger)' : '';
+    document.getElementById('k-ads-roas-sub').textContent = 'CRM Rev ÷ Ads Spend';
+    document.getElementById('k-ads-spend').textContent = fmtFull(totalCost);
+    document.getElementById('k-ads-spend-sub').textContent = 'Google · filtered period';
+  } else {
+    document.getElementById('k-ads-roas').textContent = '—';
+    document.getElementById('k-ads-roas').style.color = '';
+    document.getElementById('k-ads-roas-sub').textContent = GADS.length ? 'Select Google channel' : 'Load ads data';
+    document.getElementById('k-ads-spend').textContent = '—';
+    document.getElementById('k-ads-spend-sub').textContent = GADS.length ? 'Select Google channel' : 'Load ads data';
+  }
+
+  const f = getFilters();
+  document.getElementById('date-label').textContent =
+    (f.from||'2025-06-12')+' → '+(f.to||'2026-03-13');
+
+  const parts = [];
+  if(f.channel) parts.push(CH_LABELS[f.channel]||f.channel);
+  if(f.region) parts.push(f.region);
+  if(f.product) parts.push(f.product);
+  if(f.status) parts.push(f.status==='won'?'Won only':'Lost only');
+  document.getElementById('filter-summary').innerHTML =
+    '<strong>'+filtered.length+'</strong> deals matched'+(parts.length?' · '+parts.join(' · '):'');
+}
+
+function updateTrend(){
+  // Group by day or month
+  const grouped = {};
+  filtered.forEach(d => {
+    const key = trendPeriod === 'day' ? d[I.date] : d[I.date].slice(0,7);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(d);
+  });
+  const labels = Object.keys(grouped).sort();
+
+  const showAdsRoas = trendMetric === 'roas' && isGoogleSelected() && GADS.length;
+
+  // Build ads cost lookup grouped by same period key
+  const adsCostByPeriod = {};
+  if (showAdsRoas) {
+    const f = getFilters();
+    const activePrefixes = new Set(filtered.map(d => d[I.pc]).filter(Boolean));
+    GADS.filter(d => (!f.from || d.date >= f.from) && (!f.to || d.date <= f.to))
+      .forEach(d => {
+        if (!activePrefixes.has(d.prefix)) return;
+        const key = trendPeriod === 'day' ? d.date : d.date.slice(0,7);
+        adsCostByPeriod[key] = (adsCostByPeriod[key] || 0) + d.cost;
+      });
+  }
+
+  const vals = labels.map(k => {
+    const a = agg(grouped[k]);
+    if(trendMetric==='revenue') return Math.round(a.revenue);
+    if(trendMetric==='profit')  return Math.round(a.profit);
+    if(trendMetric==='deals')   return a.won;
+    // ROAS: use Ads ROAS if Google selected + ads loaded, else B/E ROAS
+    if (showAdsRoas) {
+      const cost = adsCostByPeriod[k] || 0;
+      return cost > 0 ? Math.round(a.revenue / cost * 100) / 100 : null;
+    }
+    return Math.round(a.weightedRoas*100)/100;
+  });
+
+  const label = {revenue:'Revenue (£)',profit:'Net Profit (£)',deals:'Won Deals'}[trendMetric]
+    || (showAdsRoas ? 'Ads ROAS' : 'Break-Even ROAS');
+  const fmtLabel = trendMetric==='deals'?v=>v:trendMetric==='roas'?v=>v+'x':v=>'£'+v.toLocaleString();
+  const pointRadius = trendPeriod==='day' && labels.length > 60 ? 0 : 3;
+  const tension = trendPeriod==='day' ? 0.1 : 0.3;
+  document.getElementById('trend-title').textContent = (trendPeriod==='day' ? 'Daily' : 'Monthly') + ' Trend';
+
+  const datasets = [{
+    label,
+    data: vals,
+    borderColor: showAdsRoas ? '#1A7A4A' : '#E85D26',
+    backgroundColor: showAdsRoas ? 'rgba(26,122,74,.08)' : 'rgba(232,93,38,.08)',
+    tension, pointBackgroundColor: showAdsRoas ? '#1A7A4A' : '#E85D26',
+    pointRadius, fill: true, borderWidth: 2, spanGaps: true
+  }];
+
+  // Add 4.61x break-even reference line when showing ROAS
+  if (trendMetric === 'roas') {
+    datasets.push({
+      label: 'Break-even (4.61x)',
+      data: labels.map(() => 4.61),
+      borderColor: '#9B9895', borderDash: [5,4], borderWidth: 1.5,
+      pointRadius: 0, fill: false, tension: 0
+    });
+  }
+
+  if(trendChart){trendChart.destroy();}
+  trendChart = new Chart(document.getElementById('chart-trend'),{
+    type:'line',
+    data:{labels, datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{
+          display: trendMetric==='roas',
+          labels:{font:{size:11},usePointStyle:true,pointStyle:'line'}
+        },
+        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmtLabel(ctx.parsed.y)}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11},maxTicksLimit:trendPeriod==='day'?20:12,maxRotation:30}},
+        y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:fmtLabel,font:{size:11}}}
+      }
+    }
+  });
+}
+
+function setTrendPeriod(period, btn) {
+  trendPeriod = period;
+  document.getElementById('trend-btn-month').style.background = period==='month' ? '#E85D26' : 'transparent';
+  document.getElementById('trend-btn-month').style.color      = period==='month' ? '#fff' : 'var(--text2)';
+  document.getElementById('trend-btn-day').style.background   = period==='day'   ? '#E85D26' : 'transparent';
+  document.getElementById('trend-btn-day').style.color        = period==='day'   ? '#fff' : 'var(--text2)';
+  updateTrend();
+}
+
+function updateChannelChart(){
+  const byCh = groupBy(filtered, I.ch);
+  const channels = Object.keys(byCh).sort((a,b)=>{
+    return agg(byCh[b]).revenue - agg(byCh[a]).revenue;
+  });
+  const revenues = channels.map(c=>Math.round(agg(byCh[c]).revenue));
+  const profits = channels.map(c=>Math.round(agg(byCh[c]).profit));
+  const colors = channels.map(c=>COLORS[c]||'#9B9895');
+
+  // Legend: channel colours + bar type key
+  const leg = document.getElementById('ch-legend');
+  leg.innerHTML =
+    '<span class="leg-item"><span class="leg-dot" style="background:rgba(150,150,150,0.35);border:1.5px solid #999"></span><span style="color:var(--text2)">Revenue</span></span>' +
+    '<span class="leg-item"><span class="leg-dot" style="background:rgba(150,150,150,0.85)"></span><span style="color:var(--text2)">Net Profit</span></span>' +
+    '<span style="margin:0 4px;color:var(--text3);font-size:11px">|</span>' +
+    channels.map((c,i)=>`<span class="leg-item"><span class="leg-dot" style="background:${colors[i]}"></span>${CH_LABELS[c]||c}</span>`).join('');
+
+  if(channelChart) channelChart.destroy();
+  channelChart = new Chart(document.getElementById('chart-channel'),{
+    type:'bar',
+    data:{labels:channels.map(c=>CH_LABELS[c]||c),datasets:[
+      {
+        label:'Revenue',
+        data:revenues,
+        backgroundColor:colors.map(c=>c+'44'),
+        borderColor:colors.map(c=>c+'CC'),
+        borderWidth:1.5,
+        borderRadius:4
+      },
+      {
+        label:'Net Profit',
+        data:profits,
+        backgroundColor:colors,
+        borderRadius:4
+      }
+    ]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title: ctx => CH_LABELS[channels[ctx[0].dataIndex]] || channels[ctx[0].dataIndex],
+          label: ctx => ctx.dataset.label + ': £' + ctx.parsed.y.toLocaleString()
+        }}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:v=>'£'+Math.round(v/1000)+'k',font:{size:11}}}
+      }
+    }
+  });
+}
+
+function updateProductChart(){
+  const byProd = groupBy(filtered, I.prod);
+  const prods = Object.keys(byProd).sort((a,b)=>{
+    const sa = parseInt(a), sb = parseInt(b); return sa-sb;
+  });
+  const revenues = prods.map(p=>Math.round(agg(byProd[p]).revenue));
+  const total = revenues.reduce((a,b)=>a+b,0)||1;
+
+  const leg = document.getElementById('prod-legend');
+  leg.innerHTML = prods.map((p,i)=>`<span class="leg-item"><span class="leg-dot" style="background:${PROD_COLORS[i%7]}"></span>${p} (${Math.round(revenues[i]/total*100)}%)</span>`).join('');
+
+  if(productChart) productChart.destroy();
+  productChart = new Chart(document.getElementById('chart-product'),{
+    type:'doughnut',
+    data:{labels:prods,datasets:[{data:revenues,backgroundColor:PROD_COLORS.slice(0,prods.length),borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: £${Math.round(ctx.parsed).toLocaleString()} (${Math.round(ctx.parsed/total*100)}%)`}}}
+    }
+  });
+}
+
+function updateRegionChannelChart(){
+  const allChannels = [...new Set(filtered.map(d=>d[I.ch]))].sort();
+  const allRegions = [...new Set(filtered.map(d=>d[I.region]))].filter(r=>r&&r!=='NOT FOUND').sort();
+
+  const datasets = allChannels.map((ch,i)=>({
+    label: CH_LABELS[ch]||ch,
+    data: allRegions.map(r=>{
+      const sub = filtered.filter(d=>d[I.region]===r && d[I.ch]===ch);
+      if(!sub.length) return 0;
+      const a = agg(sub);
+      if(regionMetric==='revenue') return Math.round(a.revenue);
+      if(regionMetric==='profit') return Math.round(a.profit);
+      if(regionMetric==='deals') return a.won;
+      if(regionMetric==='roas') return Math.round(a.weightedRoas*100)/100;
+      return Math.round(a.winRate*10)/10;
+    }),
+    backgroundColor: COLORS[ch]||'#9B9895',
+    borderRadius:3,
+  }));
+
+  const fmtTip = regionMetric==='winrate'?v=>v+'%':regionMetric==='roas'?v=>v+'x':v=>'£'+v.toLocaleString();
+  const fmtAxis = regionMetric==='deals'?v=>v:regionMetric==='winrate'?v=>v+'%':regionMetric==='roas'?v=>v+'x':v=>'£'+Math.round(v/1000)+'k';
+
+  if(regionChannelChart) regionChannelChart.destroy();
+  regionChannelChart = new Chart(document.getElementById('chart-region-channel'),{
+    type:'bar',
+    data:{labels:allRegions,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11},padding:12,usePointStyle:true,pointStyle:'rect'}},
+        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmtTip(ctx.parsed.y)}}},
+      scales:{x:{stacked:false,grid:{display:false},ticks:{font:{size:11},maxRotation:30}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{callback:fmtAxis,font:{size:11}}}}
+    }
+  });
+}
+
+function updateRegionTable(){
+  const byRegion = groupBy(filtered, I.region);
+  const costLookup = getAdsCostByPrefix();
+  const rows = Object.keys(byRegion).filter(r=>r&&r!=='NOT FOUND').map(r=>{
+    const a = agg(byRegion[r]);
+    const byCh = groupBy(byRegion[r].filter(d=>!d[I.lost]), I.ch);
+    const topCh = Object.keys(byCh).sort((a,b)=>byCh[b].length-byCh[a].length)[0]||'';
+    const prefixes = [...new Set(byRegion[r].map(d=>d[I.pc]).filter(Boolean))];
+    const regionCost = prefixes.reduce((s,p)=>s+(costLookup[p]||0),0);
+    return {...a, region:r, topCh, prefixes, regionCost};
+  }).sort((a,b)=>b.revenue-a.revenue);
+
+  const maxRev = Math.max(...rows.map(r=>r.revenue))||1;
+  const tbody = document.getElementById('tbody-region');
+  tbody.innerHTML = rows.map(r=>`<tr>
+    <td><strong>${r.region}</strong></td>
+    <td>${r.total}</td>
+    <td><div class="bar-cell"><div class="mini-bar" style="width:${Math.round(r.revenue/maxRev*80)}px"></div>${fmtFull(r.revenue)}</div></td>
+    <td>${fmtFull(r.profit)}</td>
+    <td>${pct(r.avgMargin)}</td>
+    <td><div class="bar-cell"><div class="wr-bar"><div class="wr-won" style="width:${Math.round(r.winRate)}%"></div><div class="wr-lost" style="width:${100-Math.round(r.winRate)}%"></div></div>${pct(r.winRate)}</div></td>
+    <td>${Math.round(r.weightedRoas*100)/100}x</td>
+    <td>${realRoasCell(r.revenue, null, r.regionCost)}</td>
+    <td><span class="badge badge-${r.topCh.replace('/','').replace(' ','')}">${CH_LABELS[r.topCh]||r.topCh}</span></td>
+  </tr>`).join('');
+}
+
+let pcData = [];
+function buildPostcodeData(){
+  const byPc = groupBy(filtered, I.pc);
+  pcData = Object.keys(byPc).filter(p=>p).map(p=>{
+    const a = agg(byPc[p]);
+    const regions = byPc[p].map(d=>d[I.region]);
+    const topRegion = [...new Set(regions)].sort((a,b)=>regions.filter(r=>r===b).length-regions.filter(r=>r===a).length)[0]||'';
+    const won = byPc[p].filter(d=>!d[I.lost]);
+    const byCh = groupBy(won, I.ch);
+    const topCh = Object.keys(byCh).sort((a,b)=>byCh[b].length-byCh[a].length)[0]||'';
+    return {...a, pc:p, topRegion, topCh};
+  });
+}
+
+function renderPostcodeTable(){
+  const q = document.getElementById('pc-search').value.toLowerCase();
+  const sortKey = document.getElementById('pc-sort').value;
+  const pcCostLookup2 = getAdsCostByPrefix();
+  const getAdsR = r => { const cost=pcCostLookup2[r.pc]||0; return cost>0?r.revenue/cost:0; };
+  const sortFn = {revenue:(a,b)=>b.revenue-a.revenue,profit:(a,b)=>b.profit-a.profit,deals:(a,b)=>b.total-a.total,winrate:(a,b)=>b.winRate-a.winRate,roas:(a,b)=>b.weightedRoas-a.weightedRoas,adsroas:(a,b)=>getAdsR(b)-getAdsR(a)}[sortKey];
+  const rows = pcData.filter(r=>!q||r.pc.toLowerCase().includes(q)||r.topRegion.toLowerCase().includes(q)).sort(sortFn);
+  const maxRev = Math.max(...rows.map(r=>r.revenue))||1;
+  const pcCostLookup = getAdsCostByPrefix();
+  document.getElementById('tbody-postcode').innerHTML = rows.map(r=>`<tr>
+    <td><strong style="font-family:'DM Mono',monospace">${r.pc}</strong></td>
+    <td style="color:var(--text2)">${r.topRegion}</td>
+    <td><span class="badge badge-${r.topCh.replace(/[^a-z]/gi,'')}">${CH_LABELS[r.topCh]||r.topCh||'—'}</span></td>
+    <td>${r.total}</td>
+    <td><div class="bar-cell"><div class="mini-bar" style="width:${Math.round(r.revenue/maxRev*60)}px"></div>${fmtFull(r.revenue)}</div></td>
+    <td>${fmtFull(r.profit)}</td>
+    <td>${pct(r.avgMargin)}</td>
+    <td><div class="bar-cell"><div class="wr-bar" style="width:60px"><div class="wr-won" style="width:${Math.round(r.winRate)}%"></div><div class="wr-lost" style="width:${100-Math.round(r.winRate)}%"></div></div>${pct(r.winRate)}</div></td>
+    <td>${Math.round(r.weightedRoas*100)/100}x</td>
+    <td>${realRoasCell(r.revenue, r.pc, pcCostLookup)}</td>
+  </tr>`).join('');
+}
+
+function setTrendMetric(m, btn){
+  trendMetric=m;
+  document.querySelectorAll('.tabs .tab').forEach((t,i,arr)=>{
+    const parent = btn.closest('.tabs');
+    if(parent) [...parent.querySelectorAll('.tab')].forEach(t=>t.classList.remove('active'));
+  });
+  btn.classList.add('active');
+  updateTrend();
+}
+
+function setRegionMetric(m, btn){
+  regionMetric=m;
+  const parent = btn.closest('.tabs');
+  if(parent) [...parent.querySelectorAll('.tab')].forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  updateRegionChannelChart();
+}
+
+function populateRegions(){
+  if(!RAW.length){return;}
+  const regions = [...new Set(RAW.map(d=>d[I.region]))].filter(r=>r&&r!=='NOT FOUND').sort();
+  const sel = document.getElementById('f-region');
+  regions.forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=r; sel.appendChild(o); });
+}
+
+function resetFilters(){
+  document.getElementById('f-from').value='2025-06-12';
+  document.getElementById('f-to').value='2026-03-13';
+  document.getElementById('f-channel').value='';
+  document.getElementById('f-region').value='';
+  document.getElementById('f-status').value='';
+  document.getElementById('f-product').value='';
+  refresh();
+}
+
+
+function getFilteredGads() {
+  const f = getFilters();
+  return GADS.filter(d => (!f.from || d.date >= f.from) && (!f.to || d.date <= f.to));
+}
+
+function refresh(){
+  if(!RAW.length){return;}
+  applyFilters();
+  updateKPIs();
+  updateTrend();
+  updateChannelChart();
+  updateProductChart();
+  updateRegionChannelChart();
+  updateRegionTable();
+  buildPostcodeData();
+  renderPostcodeTable();
+}
+
+// Wire up all filters
+['f-from','f-to','f-channel','f-region','f-status','f-product'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', refresh);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Wire up Load Data button
+  document.getElementById('btn-load').addEventListener('click', () => {
+    loadSheet(document.getElementById('sheet-url').value.trim());
+  });
+
+  // Wire up Enter key on URL input
+  document.getElementById('sheet-url').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadSheet(e.target.value.trim());
+  });
+
+  // Restore saved GID first, then load sheet (so GID is ready when loadGoogleSpend runs)
+  try {
+    const savedGid = localStorage.getItem('sk_gads_gid');
+    if (savedGid) document.getElementById('gads-gid').value = savedGid;
+  } catch(e) {}
+
+  // Wire up GID field — reload google spend when user changes it
+  document.getElementById('gads-gid').addEventListener('change', () => {
+    const url = document.getElementById('sheet-url').value.trim();
+    if (url) loadGoogleSpend(url);
+  });
+
+  // Restore saved sheet URL and load
+  try {
+    const saved = localStorage.getItem('sk_sheet_url');
+    if (saved) {
+      document.getElementById('sheet-url').value = saved;
+      loadSheet(saved);
+    }
+  } catch(e) {}
+});
+</script>
+</body>
+</html>
